@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sertanejo2024</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+        }
+        #login {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .playlist-link {
+            margin-top: 20px;
+            display: block;
+            font-size: 18px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .playlist-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Playlist Sertanejo 2024</h1>
+    <a class="playlist-link" href="https://open.spotify.com/playlist/4C7WcvdCHCG5liv1KwI8hG" target="_blank">Ouça a Playlist no Spotify</a>
+    <button id="login">Login no Spotify</button>
+
+    <script src="https://sdk.scdn.co/spotify-player.js"></script>
+    <script>
+        const redirectUri = 'http://testeebot-com.umbler.net'; // Substitua pela sua URI de redirecionamento
+        const clientId = 'a23505bc75ad4879bd44c9f1c584c7ca'; // Substitua pelo seu Client ID
+        const scopes = 'streaming user-read-email user-read-private user-top-read playlist-read-private';
+
+        document.getElementById('login').addEventListener('click', () => {
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
+            window.location = authUrl;
+        });
+
+        const getAccessToken = () => {
+            const hash = window.location.hash;
+            const token = hash.split('&')[0].split('=')[1];
+            if (token) {
+                window.location.hash = ''; // Limpa o hash para não confundir futuras chamadas
+                return token;
+            }
+            return null;
+        };
+
+        const token = getAccessToken();
+
+        if (token) {
+            window.onSpotifyWebPlaybackSDKReady = () => {
+                const player = new Spotify.Player({
+                    name: 'Meu Reprodutor Spotify',
+                    getOAuthToken: cb => { cb(token); },
+                    volume: 0.5
+                });
+
+                player.connect().then(success => {
+                    if (success) {
+                        console.log('Player conectado com sucesso!');
+
+                        player.on('ready', () => {
+                            player.play({
+                                context_uri: 'spotify:playlist:4C7WcvdCHCG5liv1KwI8hG'
+                            }).then(() => {
+                                console.log('Reprodução iniciada');
+                            }).catch(err => {
+                                console.error('Erro ao iniciar a reprodução:', err);
+                            });
+                        });
+
+                        // Função para mudar a faixa em um intervalo aleatório
+                        const changeTrack = () => {
+                            const delay = Math.floor(Math.random() * (30000 - 10000 + 1)) + 10000; // Entre 10 e 30 segundos
+                            setTimeout(() => {
+                                player.nextTrack();
+                                changeTrack(); // Chama a função novamente após mudar a faixa
+                            }, delay);
+                        };
+
+                        player.on('player_state_changed', state => {
+                            if (state && !state.paused) {
+                                // Inicia o ciclo de troca de faixas
+                                changeTrack();
+                            }
+                        });
+                    }
+                });
+
+                player.addListener('not_ready', ({ device_id }) => {
+                    console.log('Device ID ficou offline', device_id);
+                });
+            };
+        }
+    </script>
+</body>
+</html>
